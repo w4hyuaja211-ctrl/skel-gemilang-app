@@ -5,6 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
+import SiswaList from "./pages/SiswaList.tsx";
+import SiswaForm from "./pages/SiswaForm.tsx";
+import SKLDetail from "./pages/SKLDetail.tsx";
+import Verifikasi from "./pages/Verifikasi.tsx";
+import Pengaturan from "./pages/Pengaturan.tsx";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +22,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/siswa" element={<SiswaList />} />
+          <Route path="/siswa/baru" element={<SiswaForm />} />
+          <Route path="/skl/:id" element={<SKLDetail />} />
+          <Route path="/verifikasi" element={<Verifikasi />} />
+          <Route path="/verifikasi/:id" element={<Verifikasi />} />
+          <Route path="/pengaturan" element={<Pengaturan />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
