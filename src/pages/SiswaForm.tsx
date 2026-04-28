@@ -51,13 +51,7 @@ export default function SiswaForm() {
     nomorSurat: "",
     status: "Lulus" as "Lulus" | "Tidak Lulus",
   });
-  const [nilai, setNilai] = useState<Nilai[]>([
-    { mapel: "Pendidikan Agama", nilai: 80 },
-    { mapel: "PPKn", nilai: 80 },
-    { mapel: "Bahasa Indonesia", nilai: 80 },
-    { mapel: "Matematika", nilai: 80 },
-    { mapel: "Bahasa Inggris", nilai: 80 },
-  ]);
+  const [nilai, setNilai] = useState<Nilai[]>([]);
 
   const set = (k: keyof typeof form, v: any) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -120,12 +114,13 @@ export default function SiswaForm() {
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-6 shadow-sm-soft">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-base font-bold">Nilai Mata Pelajaran</h2>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="font-display text-base font-bold">Nilai Mata Pelajaran <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span></h2>
               <button type="button" onClick={() => setNilai([...nilai, { mapel: "", nilai: 0 }])} className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
                 <Plus className="h-3.5 w-3.5" /> Tambah
               </button>
             </div>
+            <p className="mb-4 text-xs text-muted-foreground">Boleh dikosongkan jika hanya untuk pengumuman kelulusan.</p>
             <div className="space-y-2">
               {nilai.map((n, i) => (
                 <div key={i} className="grid grid-cols-[1fr_100px_auto] gap-2">
