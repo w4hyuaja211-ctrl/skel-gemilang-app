@@ -77,7 +77,7 @@ export const useSKL = create<State>()(
   persist(
     (set, get) => ({
       sekolah: {
-        nama: "SMA Negeri 1 Harapan Bangsa",
+        nama: "SMA Muhammadiyah 1 Palembang",
         npsn: "20212223",
         alamat: "Jl. Pendidikan No. 10, Jakarta Selatan",
         kepalaSekolah: "Drs. Bambang Widodo, M.Pd.",
