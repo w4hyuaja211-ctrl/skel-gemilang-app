@@ -12,6 +12,7 @@ export default function SKLDetail() {
   const nav = useNavigate();
   const siswa = useSKL((s) => s.getSiswa(id || ""));
   const sekolah = useSKL((s) => s.sekolah);
+  const pengumuman = useSKL((s) => s.pengumuman);
   const ref = useRef<HTMLDivElement>(null);
 
   if (!siswa) {
@@ -57,7 +58,7 @@ export default function SKLDetail() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-widest text-primary">Surat Keterangan Lulus</div>
+          <div className="text-xs font-semibold uppercase tracking-widest text-primary">{pengumuman.tipeSurat}</div>
           <h1 className="mt-1 font-display text-2xl font-bold md:text-3xl">{siswa.nama}</h1>
           <p className="text-sm text-muted-foreground">{siswa.nomorSurat} · {siswa.kelas}</p>
         </div>
@@ -80,7 +81,7 @@ export default function SKLDetail() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-secondary/30 p-4 md:p-8 print:bg-white print:p-0">
-        <SuratSKL ref={ref} siswa={siswa} sekolah={sekolah} verifyUrl={verifyUrl} />
+        <SuratSKL ref={ref} siswa={siswa} sekolah={sekolah} tipeSurat={pengumuman.tipeSurat} />
       </div>
 
       <style>{`
