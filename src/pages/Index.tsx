@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSKL } from "@/store/skl";
 import {
   GraduationCap,
@@ -7,36 +7,57 @@ import {
   ShieldCheck,
   CheckCircle2,
   XCircle,
-  QrCode,
   KeyRound,
   FileCheck2,
-  ArrowRight,
   Info,
   Settings,
+  Clock,
+  CalendarClock,
 } from "lucide-react";
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 const Index = () => {
   const nav = useNavigate();
   const sekolah = useSKL((s) => s.sekolah);
-  const getSiswa = useSKL((s) => s.getSiswa);
+  const pengumuman = useSKL((s) => s.pengumuman);
+  const findByNISN = useSKL((s) => s.findByNISN);
+
   const [q, setQ] = useState("");
-  const [hasil, setHasil] = useState<null | "found" | "notfound">(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const buka = new Date(pengumuman.jadwalBuka).getTime();
+  const sudahBuka = !isNaN(buka) ? now >= buka : true;
+  const diff = Math.max(0, buka - now);
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const sec = Math.floor((diff % 60000) / 1000);
 
   const cek = (e: React.FormEvent) => {
     e.preventDefault();
-    const id = q.trim();
-    if (!id) return;
-    const s = getSiswa(id);
+    setErr(null);
+    const nisn = q.trim();
+    if (!/^\d{10}$/.test(nisn)) {
+      setErr("NISN harus 10 digit angka.");
+      return;
+    }
+    const s = findByNISN(nisn);
     if (s) {
       nav(`/verifikasi/${s.id}`);
     } else {
-      setHasil("notfound");
+      setErr("NISN tidak ditemukan dalam data peserta.");
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      {/* Top bar */}
       <header className="container flex h-20 items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary shadow-glow">
@@ -44,7 +65,9 @@ const Index = () => {
           </div>
           <div className="leading-tight">
             <div className="font-display text-lg font-bold">e-SKL</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Pengumuman Kelulusan</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Pengumuman Kelulusan
+            </div>
           </div>
         </div>
         <Link
@@ -52,24 +75,66 @@ const Index = () => {
           title="Area Admin Sekolah"
           className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/70 px-3 py-2 text-xs font-medium text-muted-foreground backdrop-blur hover:bg-card hover:text-foreground"
         >
-          <Settings className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Login Admin</span>
+          <Settings className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Login Admin</span>
         </Link>
       </header>
 
-      {/* Hero - Cek SKL */}
       <section className="container pb-12 pt-6 md:pt-12">
         <div className="mx-auto max-w-2xl text-center animate-fade-in">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-            <ShieldCheck className="h-3.5 w-3.5" /> Sistem Resmi {sekolah.nama}
+            <ShieldCheck className="h-3.5 w-3.5" /> {sekolah.nama}
           </div>
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
-            Cek <span className="bg-gradient-primary bg-clip-text text-transparent">Surat Keterangan Lulus</span>
+            {pengumuman.headerJudul.split(" ").slice(0, -1).join(" ")}{" "}
+            <span className="bg-gradient-primary bg-clip-text text-transparent">
+              {pengumuman.headerJudul.split(" ").slice(-1)}
+            </span>
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-muted-foreground">
-            Masukkan <strong>NISN</strong> atau <strong>ID Surat</strong> kamu di kolom di bawah untuk melihat hasil pengumuman kelulusan.
+            {pengumuman.headerSub}
           </p>
 
-          {/* Search box */}
+          {!sudahBuka && (
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-primary/30 bg-card p-6 shadow-md-soft">
+              <div className="flex items-center justify-center gap-2 text-primary">
+                <CalendarClock className="h-4 w-4" />
+                <div className="text-xs font-bold uppercase tracking-widest">
+                  Pengumuman dibuka dalam
+                </div>
+              </div>
+              <div className="mt-4 flex justify-center gap-2 sm:gap-3">
+                {[
+                  ["Hari", d],
+                  ["Jam", h],
+                  ["Menit", m],
+                  ["Detik", sec],
+                ].map(([l, v]) => (
+                  <div
+                    key={l as string}
+                    className="min-w-[64px] rounded-xl bg-gradient-primary px-3 py-3 text-primary-foreground"
+                  >
+                    <div className="font-display text-2xl font-extrabold tabular-nums">
+                      {pad(v as number)}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider opacity-80">
+                      {l}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                Dibuka pada{" "}
+                <strong>
+                  {new Date(pengumuman.jadwalBuka).toLocaleString("id-ID", {
+                    dateStyle: "full",
+                    timeStyle: "short",
+                  })}
+                </strong>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={cek} className="mx-auto mt-8 max-w-xl animate-scale-in">
             <div className="rounded-2xl border border-border bg-card p-2 shadow-lg-soft">
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -77,59 +142,75 @@ const Index = () => {
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <input
                     value={q}
-                    onChange={(e) => { setQ(e.target.value); setHasil(null); }}
-                    placeholder="Contoh: 0098765432 atau demo-001"
-                    maxLength={50}
-                    className="w-full rounded-xl bg-background py-4 pl-12 pr-3 text-base outline-none ring-primary/20 focus:ring-2"
+                    onChange={(e) => {
+                      setQ(e.target.value.replace(/\D/g, "").slice(0, 10));
+                      setErr(null);
+                    }}
+                    placeholder="Masukkan 10 digit NISN"
+                    inputMode="numeric"
+                    pattern="\d{10}"
+                    maxLength={10}
+                    disabled={!sudahBuka}
+                    className="w-full rounded-xl bg-background py-4 pl-12 pr-3 text-base tracking-widest outline-none ring-primary/20 focus:ring-2 disabled:opacity-60"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-primary px-6 py-4 text-sm font-bold text-primary-foreground shadow-md-soft transition hover:shadow-glow"
+                  disabled={!sudahBuka}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-primary px-6 py-4 text-sm font-bold text-primary-foreground shadow-md-soft transition hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <FileCheck2 className="h-4 w-4" /> Cek Sekarang
+                  {sudahBuka ? (
+                    <>
+                      <FileCheck2 className="h-4 w-4" /> Cek Sekarang
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="h-4 w-4" /> Belum Dibuka
+                    </>
+                  )}
                 </button>
               </div>
             </div>
 
-            {hasil === "notfound" && (
+            {err && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm text-destructive">
                 <XCircle className="h-4 w-4" />
-                Data tidak ditemukan. Periksa kembali NISN/ID Surat kamu.
+                {err}
               </div>
             )}
           </form>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Tip: coba ID demo <code className="rounded bg-secondary px-1.5 py-0.5 font-mono">demo-001</code>
+            NISN terdiri dari 10 digit angka unik dari Kemdikbud.
           </p>
         </div>
 
-        {/* Petunjuk - 3 langkah */}
         <div className="mx-auto mt-16 max-w-4xl">
           <div className="mb-6 flex items-center justify-center gap-2 text-center">
             <Info className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-sm font-bold uppercase tracking-widest text-primary">Cara Cek SKL</h2>
+            <h2 className="font-display text-sm font-bold uppercase tracking-widest text-primary">
+              Cara Cek Kelulusan
+            </h2>
           </div>
           <ol className="grid gap-4 md:grid-cols-3">
             {[
               {
                 n: "1",
                 i: KeyRound,
-                t: "Siapkan NISN / ID",
-                d: "Pakai Nomor Induk Siswa Nasional, atau ID Surat yang dibagikan oleh pihak sekolah.",
+                t: "Siapkan NISN",
+                d: "Nomor Induk Siswa Nasional (10 digit angka). Bisa dilihat di kartu pelajar atau rapor.",
               },
               {
                 n: "2",
                 i: Search,
                 t: "Masukkan & klik Cek",
-                d: "Ketik di kolom pencarian di atas, lalu tekan tombol \"Cek Sekarang\".",
+                d: "Ketik NISN di kolom di atas saat jadwal pengumuman telah dibuka.",
               },
               {
                 n: "3",
                 i: CheckCircle2,
-                t: "Lihat & simpan hasil",
-                d: "Hasil pengumuman akan tampil. Bisa juga dicek dengan memindai QR Code dari sekolah.",
+                t: "Lihat hasil",
+                d: "Status kelulusan: LULUS, BELUM, atau TUNDA — lengkap dengan keterangan dari sekolah.",
               },
             ].map((step) => (
               <li
@@ -141,34 +222,21 @@ const Index = () => {
                 </div>
                 <step.i className="h-6 w-6 text-primary" />
                 <h3 className="mt-3 font-display text-base font-bold">{step.t}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{step.d}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {step.d}
+                </p>
               </li>
             ))}
           </ol>
-
-          {/* QR info card */}
-          <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-gradient-primary p-6 text-primary-foreground sm:flex-row">
-            <div className="flex items-center gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-background/15">
-                <QrCode className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="font-display text-base font-bold">Punya QR Code dari sekolah?</h3>
-                <p className="text-sm opacity-90">Cukup pindai dengan kamera HP — hasil akan langsung terbuka.</p>
-              </div>
-            </div>
-            <Link
-              to="/verifikasi"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-background px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-background/90"
-            >
-              Halaman Verifikasi <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
         </div>
       </section>
 
-      <footer className="container border-t border-border/50 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {sekolah.nama} — Sistem Pengumuman Kelulusan Digital
+      <footer className="container border-t border-border/50 py-8 text-center text-xs text-muted-foreground">
+        <p className="mx-auto max-w-2xl">{pengumuman.footerTeks}</p>
+        <p className="mt-3">
+          © {new Date().getFullYear()} {sekolah.nama} — Tahun Pelajaran{" "}
+          {pengumuman.tahunAjaran}
+        </p>
       </footer>
     </div>
   );
