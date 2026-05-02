@@ -7,13 +7,14 @@ export default function Dashboard() {
   const siswa = useSKL((s) => s.siswa);
   const sekolah = useSKL((s) => s.sekolah);
   const lulus = siswa.filter((s) => s.status === "Lulus").length;
-  const tdkLulus = siswa.length - lulus;
+  const tunda = siswa.filter((s) => s.status === "Tunda").length;
+  const belum = siswa.filter((s) => s.status === "Belum").length;
 
   const stats = [
     { l: "Total Siswa", v: siswa.length, i: Users, c: "bg-primary/10 text-primary" },
     { l: "Lulus", v: lulus, i: CheckCircle2, c: "bg-success/10 text-success" },
-    { l: "Tidak Lulus", v: tdkLulus, i: XCircle, c: "bg-destructive/10 text-destructive" },
-    { l: "SKL Diterbitkan", v: siswa.length, i: FileText, c: "bg-warning/10 text-warning" },
+    { l: "Tunda", v: tunda, i: FileText, c: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+    { l: "Belum Lulus", v: belum, i: XCircle, c: "bg-destructive/10 text-destructive" },
   ];
 
   return (
@@ -68,7 +69,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${s.status === "Lulus" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase ${s.status === "Lulus" ? "bg-success/10 text-success" : s.status === "Tunda" ? "bg-amber-500/10 text-amber-700 dark:text-amber-400" : "bg-destructive/10 text-destructive"}`}>
                     {s.status}
                   </span>
                   <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
