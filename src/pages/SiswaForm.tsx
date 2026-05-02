@@ -1,5 +1,5 @@
 import AppShell from "@/components/AppShell";
-import { useSKL, type Nilai } from "@/store/skl";
+import { useSKL, type Nilai, type StatusKelulusan } from "@/store/skl";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -7,15 +7,12 @@ import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
 import { z } from "zod";
 
 const schema = z.object({
-  nisn: z.string().trim().min(4, "NISN minimal 4 digit").max(20),
+  nisn: z.string().regex(/^\d{10}$/, "NISN harus 10 digit angka"),
   nis: z.string().trim().max(20),
   nama: z.string().trim().min(2, "Nama wajib diisi").max(100),
   tempatLahir: z.string().trim().min(2).max(60),
   tanggalLahir: z.string().min(1, "Tanggal lahir wajib"),
-  orangTua: z.string().trim().max(100),
-  alamat: z.string().trim().max(200),
   kelas: z.string().trim().min(1, "Kelas wajib"),
-  jurusan: z.string().trim().max(50).optional(),
   tahunAjaran: z.string().trim().min(4),
   tanggalLulus: z.string().min(1, "Tanggal lulus wajib"),
   nomorSurat: z.string().trim().min(1, "Nomor surat wajib"),
@@ -30,11 +27,14 @@ const Field = ({ label, children, required }: any) => (
   </label>
 );
 
-const inputCls = "w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none ring-primary/20 focus:ring-2 transition";
+const inputCls =
+  "w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none ring-primary/20 focus:ring-2 transition";
 
 export default function SiswaForm() {
   const nav = useNavigate();
   const add = useSKL((s) => s.addSiswa);
+  const pengumuman = useSKL((s) => s.pengumuman);
+
   const [form, setForm] = useState({
     nisn: "",
     nis: "",
@@ -46,14 +46,16 @@ export default function SiswaForm() {
     alamat: "",
     kelas: "",
     jurusan: "",
-    tahunAjaran: "2024/2025",
+    tahunAjaran: pengumuman.tahunAjaran,
     tanggalLulus: new Date().toISOString().slice(0, 10),
     nomorSurat: "",
-    status: "Lulus" as "Lulus" | "Tidak Lulus",
+    status: "Lulus" as StatusKelulusan,
+    keteranganTunda: "",
   });
   const [nilai, setNilai] = useState<Nilai[]>([]);
 
-  const set = (k: keyof typeof form, v: any) => setForm((p) => ({ ...p, [k]: v }));
+  const set = (k: keyof typeof form, v: any) =>
+    setForm((p) => ({ ...p, [k]: v }));
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,19 +64,34 @@ export default function SiswaForm() {
       toast.error(parsed.error.issues[0].message);
       return;
     }
+    if (form.status === "Tunda" && !form.keteranganTunda.trim()) {
+      toast.error("Status TUNDA wajib mencantumkan keterangan");
+      return;
+    }
     const created = add({ ...form, nilai });
     toast.success("Data siswa berhasil ditambahkan");
     nav(`/skl/${created.id}`);
   };
 
+  const statusOpts: { v: StatusKelulusan; cls: string }[] = [
+    { v: "Lulus", cls: "border-success/40 bg-success/5 text-success" },
+    { v: "Belum", cls: "border-destructive/40 bg-destructive/5 text-destructive" },
+    { v: "Tunda", cls: "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400" },
+  ];
+
   return (
     <AppShell>
-      <button onClick={() => nav(-1)} className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <button
+        onClick={() => nav(-1)}
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> Kembali
       </button>
       <div className="mb-6">
-        <div className="text-xs font-semibold uppercase tracking-widest text-primary">Form Input</div>
-        <h1 className="mt-1 font-display text-3xl font-bold">Tambah Siswa & SKL</h1>
+        <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+          Form Input
+        </div>
+        <h1 className="mt-1 font-display text-3xl font-bold">Tambah Siswa</h1>
       </div>
 
       <form onSubmit={submit} className="grid gap-6 lg:grid-cols-3">
@@ -82,51 +99,139 @@ export default function SiswaForm() {
           <section className="rounded-2xl border border-border bg-card p-6 shadow-sm-soft">
             <h2 className="mb-4 font-display text-base font-bold">Identitas Siswa</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Nama Lengkap" required><input className={inputCls} value={form.nama} onChange={(e) => set("nama", e.target.value)} maxLength={100} /></Field>
-              <Field label="NISN" required><input className={inputCls} value={form.nisn} onChange={(e) => set("nisn", e.target.value)} maxLength={20} /></Field>
-              <Field label="NIS"><input className={inputCls} value={form.nis} onChange={(e) => set("nis", e.target.value)} maxLength={20} /></Field>
+              <Field label="Nama Lengkap" required>
+                <input className={inputCls} value={form.nama} onChange={(e) => set("nama", e.target.value)} maxLength={100} />
+              </Field>
+              <Field label="NISN (10 digit)" required>
+                <input
+                  className={inputCls}
+                  value={form.nisn}
+                  onChange={(e) => set("nisn", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="0000000000"
+                />
+              </Field>
+              <Field label="NIS">
+                <input className={inputCls} value={form.nis} onChange={(e) => set("nis", e.target.value)} maxLength={20} />
+              </Field>
               <Field label="Jenis Kelamin">
                 <select className={inputCls} value={form.jenisKelamin} onChange={(e) => set("jenisKelamin", e.target.value)}>
-                  <option>Laki-laki</option><option>Perempuan</option>
+                  <option>Laki-laki</option>
+                  <option>Perempuan</option>
                 </select>
               </Field>
-              <Field label="Tempat Lahir" required><input className={inputCls} value={form.tempatLahir} onChange={(e) => set("tempatLahir", e.target.value)} maxLength={60} /></Field>
-              <Field label="Tanggal Lahir" required><input type="date" className={inputCls} value={form.tanggalLahir} onChange={(e) => set("tanggalLahir", e.target.value)} /></Field>
-              <Field label="Nama Orang Tua/Wali"><input className={inputCls} value={form.orangTua} onChange={(e) => set("orangTua", e.target.value)} maxLength={100} /></Field>
-              <Field label="Alamat"><input className={inputCls} value={form.alamat} onChange={(e) => set("alamat", e.target.value)} maxLength={200} /></Field>
+              <Field label="Tempat Lahir" required>
+                <input className={inputCls} value={form.tempatLahir} onChange={(e) => set("tempatLahir", e.target.value)} maxLength={60} />
+              </Field>
+              <Field label="Tanggal Lahir" required>
+                <input type="date" className={inputCls} value={form.tanggalLahir} onChange={(e) => set("tanggalLahir", e.target.value)} />
+              </Field>
+              <Field label="Nama Orang Tua/Wali">
+                <input className={inputCls} value={form.orangTua} onChange={(e) => set("orangTua", e.target.value)} maxLength={100} />
+              </Field>
+              <Field label="Alamat">
+                <input className={inputCls} value={form.alamat} onChange={(e) => set("alamat", e.target.value)} maxLength={200} />
+              </Field>
             </div>
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-6 shadow-sm-soft">
-            <h2 className="mb-4 font-display text-base font-bold">Akademik</h2>
+            <h2 className="mb-4 font-display text-base font-bold">Akademik & Kelulusan</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Kelas" required><input className={inputCls} value={form.kelas} onChange={(e) => set("kelas", e.target.value)} placeholder="XII IPA 1" /></Field>
-              <Field label="Jurusan / Program"><input className={inputCls} value={form.jurusan} onChange={(e) => set("jurusan", e.target.value)} placeholder="MIPA" /></Field>
-              <Field label="Tahun Ajaran" required><input className={inputCls} value={form.tahunAjaran} onChange={(e) => set("tahunAjaran", e.target.value)} /></Field>
-              <Field label="Status Kelulusan">
-                <select className={inputCls} value={form.status} onChange={(e) => set("status", e.target.value)}>
-                  <option>Lulus</option><option>Tidak Lulus</option>
-                </select>
+              <Field label="Kelas" required>
+                <input className={inputCls} value={form.kelas} onChange={(e) => set("kelas", e.target.value)} placeholder="XII IPA 1" />
               </Field>
-              <Field label="Nomor Surat" required><input className={inputCls} value={form.nomorSurat} onChange={(e) => set("nomorSurat", e.target.value)} placeholder="421/SKL/045/2025" /></Field>
-              <Field label="Tanggal Lulus" required><input type="date" className={inputCls} value={form.tanggalLulus} onChange={(e) => set("tanggalLulus", e.target.value)} /></Field>
+              <Field label="Jurusan / Program">
+                <input className={inputCls} value={form.jurusan} onChange={(e) => set("jurusan", e.target.value)} placeholder="MIPA" />
+              </Field>
+              <Field label="Tahun Pelajaran" required>
+                <input className={inputCls} value={form.tahunAjaran} onChange={(e) => set("tahunAjaran", e.target.value)} />
+              </Field>
+              <Field label="Nomor Surat" required>
+                <input className={inputCls} value={form.nomorSurat} onChange={(e) => set("nomorSurat", e.target.value)} placeholder="421/SKL/045/2025" />
+              </Field>
+              <Field label="Tanggal Lulus" required>
+                <input type="date" className={inputCls} value={form.tanggalLulus} onChange={(e) => set("tanggalLulus", e.target.value)} />
+              </Field>
+
+              <div className="sm:col-span-2">
+                <span className="mb-1.5 block text-xs font-semibold">Status Kelulusan</span>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {statusOpts.map((o) => (
+                    <label
+                      key={o.v}
+                      className={`cursor-pointer rounded-xl border p-3 text-center text-sm font-bold uppercase tracking-wider transition ${
+                        form.status === o.v ? `${o.cls} ring-2 ring-current/30` : "border-border bg-background"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="sr-only"
+                        checked={form.status === o.v}
+                        onChange={() => set("status", o.v)}
+                      />
+                      {o.v}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {form.status === "Tunda" && (
+                <Field label="Keterangan Tunda" required>
+                  <textarea
+                    className={inputCls}
+                    rows={3}
+                    value={form.keteranganTunda}
+                    onChange={(e) => set("keteranganTunda", e.target.value)}
+                    maxLength={300}
+                    placeholder="Contoh: Belum menyelesaikan ujian praktik Penjaskes, Seni Budaya"
+                  />
+                </Field>
+              )}
             </div>
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-6 shadow-sm-soft">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="font-display text-base font-bold">Nilai Mata Pelajaran <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span></h2>
-              <button type="button" onClick={() => setNilai([...nilai, { mapel: "", nilai: 0 }])} className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+              <h2 className="font-display text-base font-bold">
+                Nilai Mata Pelajaran{" "}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => setNilai([...nilai, { mapel: "", nilai: 0 }])}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+              >
                 <Plus className="h-3.5 w-3.5" /> Tambah
               </button>
             </div>
-            <p className="mb-4 text-xs text-muted-foreground">Boleh dikosongkan jika hanya untuk pengumuman kelulusan.</p>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Boleh dikosongkan jika hanya untuk pengumuman kelulusan.
+            </p>
             <div className="space-y-2">
               {nilai.map((n, i) => (
                 <div key={i} className="grid grid-cols-[1fr_100px_auto] gap-2">
-                  <input className={inputCls} value={n.mapel} onChange={(e) => setNilai(nilai.map((x, j) => j === i ? { ...x, mapel: e.target.value } : x))} placeholder="Mata pelajaran" maxLength={50} />
-                  <input type="number" min={0} max={100} className={inputCls} value={n.nilai} onChange={(e) => setNilai(nilai.map((x, j) => j === i ? { ...x, nilai: Number(e.target.value) } : x))} />
-                  <button type="button" onClick={() => setNilai(nilai.filter((_, j) => j !== i))} className="grid h-10 w-10 place-items-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20">
+                  <input
+                    className={inputCls}
+                    value={n.mapel}
+                    onChange={(e) => setNilai(nilai.map((x, j) => (j === i ? { ...x, mapel: e.target.value } : x)))}
+                    placeholder="Mata pelajaran"
+                    maxLength={50}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className={inputCls}
+                    value={n.nilai}
+                    onChange={(e) => setNilai(nilai.map((x, j) => (j === i ? { ...x, nilai: Number(e.target.value) } : x)))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setNilai(nilai.filter((_, j) => j !== i))}
+                    className="grid h-10 w-10 place-items-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -138,9 +243,15 @@ export default function SiswaForm() {
         <aside className="lg:col-span-1">
           <div className="sticky top-24 rounded-2xl border border-border bg-gradient-primary p-6 text-primary-foreground shadow-md-soft">
             <h3 className="font-display text-lg font-bold">Siap menerbitkan?</h3>
-            <p className="mt-2 text-sm opacity-90">Setelah disimpan, SKL akan langsung di-generate lengkap dengan QR Code untuk verifikasi.</p>
-            <button type="submit" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-background px-5 py-3 text-sm font-semibold text-foreground hover:bg-background/90">
-              <Save className="h-4 w-4" /> Simpan & Terbitkan
+            <p className="mt-2 text-sm opacity-90">
+              Tipe surat akan mengikuti pengaturan global:{" "}
+              <strong>{pengumuman.tipeSurat}</strong>.
+            </p>
+            <button
+              type="submit"
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-background px-5 py-3 text-sm font-semibold text-foreground hover:bg-background/90"
+            >
+              <Save className="h-4 w-4" /> Simpan
             </button>
           </div>
         </aside>
