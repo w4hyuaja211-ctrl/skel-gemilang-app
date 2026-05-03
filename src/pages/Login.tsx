@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { GraduationCap, LogIn, Loader2 } from "lucide-react";
@@ -10,6 +10,16 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [justSignedIn, setJustSignedIn] = useState(false);
+
+  useEffect(() => {
+    console.log("Login state - justSignedIn:", justSignedIn, "loading:", loading, "user:", !!user, "isAdmin:", isAdmin);
+    if (justSignedIn && !loading && user && isAdmin) {
+      console.log("Navigating to dashboard...");
+      nav("/dashboard");
+      setJustSignedIn(false);
+    }
+  }, [justSignedIn, loading, user, isAdmin, nav]);
 
   if (!loading && user && isAdmin) return <Navigate to="/dashboard" replace />;
 
@@ -23,7 +33,7 @@ export default function Login() {
       return;
     }
     toast.success("Berhasil masuk");
-    nav("/dashboard");
+    setJustSignedIn(true);
   };
 
   return (
