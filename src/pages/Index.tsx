@@ -165,7 +165,7 @@ export default function Index() {
 
       <footer className="container border-t border-border/50 py-8 text-center text-xs text-muted-foreground">
         <p className="mx-auto max-w-2xl">{pengumuman.footer_teks}</p>
-        <p className="mt-3">© {new Date().getFullYear()} {sekolah.nama} — Tahun Pelajaran {pengumuman.tahun_ajaran}</p>
+        <p className="mt-3">© {new Date().getFullYear()} {sekolah.nama}</p>
       </footer>
     </div>
   );
