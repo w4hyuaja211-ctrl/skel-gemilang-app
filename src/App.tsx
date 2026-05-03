@@ -40,6 +40,7 @@ const App = () => (
             <Route path="/dashboard" element={<RequireAdmin><Dashboard /></RequireAdmin>} />
             <Route path="/siswa" element={<RequireAdmin><SiswaList /></RequireAdmin>} />
             <Route path="/siswa/baru" element={<RequireAdmin><SiswaForm /></RequireAdmin>} />
+            <Route path="/siswa/edit/:id" element={<RequireAdmin><SiswaForm /></RequireAdmin>} />
             <Route path="/skl/:id" element={<RequireAdmin><SKLDetail /></RequireAdmin>} />
             <Route path="/pengaturan" element={<RequireAdmin><Pengaturan /></RequireAdmin>} />
             <Route path="/master" element={<RequireAdmin><MasterData /></RequireAdmin>} />
