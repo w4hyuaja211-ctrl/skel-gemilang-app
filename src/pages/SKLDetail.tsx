@@ -1,30 +1,25 @@
 import AppShell from "@/components/AppShell";
 import SuratSKL from "@/components/SuratSKL";
-import { useSKL } from "@/store/skl";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Printer, Share2, ShieldCheck } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { getSiswa, getSekolah, getPengumuman } from "@/lib/skl-api";
 
 export default function SKLDetail() {
   const { id } = useParams();
   const nav = useNavigate();
-  const siswa = useSKL((s) => s.getSiswa(id || ""));
-  const sekolah = useSKL((s) => s.sekolah);
-  const pengumuman = useSKL((s) => s.pengumuman);
+  const { data } = useQuery({ queryKey: ["siswa", id], queryFn: () => getSiswa(id!), enabled: !!id });
+  const { data: sekolah } = useQuery({ queryKey: ["sekolah"], queryFn: getSekolah });
+  const { data: pengumuman } = useQuery({ queryKey: ["pengumuman"], queryFn: getPengumuman });
   const ref = useRef<HTMLDivElement>(null);
 
-  if (!siswa) {
-    return (
-      <AppShell>
-        <div className="rounded-2xl border border-border bg-card p-10 text-center">
-          <p className="text-muted-foreground">Data siswa tidak ditemukan.</p>
-          <Link to="/siswa" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">Kembali ke daftar siswa</Link>
-        </div>
-      </AppShell>
-    );
+  if (!data || !sekolah || !pengumuman) {
+    return <AppShell><div className="rounded-2xl border border-border bg-card p-10 text-center"><p className="text-muted-foreground">Memuat…</p></div></AppShell>;
   }
+  const { siswa, nilai } = data;
 
   const verifyUrl = `${window.location.origin}/verifikasi/${siswa.id}`;
 
@@ -44,10 +39,8 @@ export default function SKLDetail() {
   };
 
   const share = async () => {
-    try {
-      await navigator.clipboard.writeText(verifyUrl);
-      toast.success("Link verifikasi disalin!");
-    } catch { toast.error("Gagal menyalin"); }
+    try { await navigator.clipboard.writeText(verifyUrl); toast.success("Link verifikasi disalin!"); }
+    catch { toast.error("Gagal menyalin"); }
   };
 
   return (
@@ -58,9 +51,9 @@ export default function SKLDetail() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-widest text-primary">{pengumuman.tipeSurat}</div>
+          <div className="text-xs font-semibold uppercase tracking-widest text-primary">{pengumuman.tipe_surat}</div>
           <h1 className="mt-1 font-display text-2xl font-bold md:text-3xl">{siswa.nama}</h1>
-          <p className="text-sm text-muted-foreground">{siswa.nomorSurat} · {siswa.kelas}</p>
+          <p className="text-sm text-muted-foreground">{siswa.nomor_surat} · {siswa.kelas}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={share} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 py-2 text-xs font-semibold shadow-sm-soft hover:bg-accent">
@@ -81,7 +74,7 @@ export default function SKLDetail() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-secondary/30 p-4 md:p-8 print:bg-white print:p-0">
-        <SuratSKL ref={ref} siswa={siswa} sekolah={sekolah} tipeSurat={pengumuman.tipeSurat} />
+        <SuratSKL ref={ref} siswa={siswa} nilai={nilai} sekolah={sekolah} tipeSurat={pengumuman.tipe_surat} />
       </div>
 
       <style>{`
