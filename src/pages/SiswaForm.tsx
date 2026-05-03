@@ -1,8 +1,8 @@
 import AppShell from "@/components/AppShell";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { addSiswa, getPengumuman, listKelas, listJurusan, listMapel, type StatusKelulusan, type Nilai } from "@/lib/skl-api";
+import { addSiswa, getPengumuman, listKelas, listJurusan, listMapel, type StatusKelulusan, type Nilai, getSiswa, updateSiswa } from "@/lib/skl-api";
 import { toast } from "sonner";
 import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
 import { z } from "zod";
@@ -28,6 +28,8 @@ const inputCls = "w-full rounded-lg border border-input bg-background px-3 py-2.
 
 export default function SiswaForm() {
   const nav = useNavigate();
+  const { id } = useParams<{ id?: string }>();
+  const isEdit = !!id;
   const { data: pengumuman } = useQuery({ queryKey: ["pengumuman"], queryFn: getPengumuman });
   const { data: kelasList = [] } = useQuery({ queryKey: ["kelas"], queryFn: listKelas });
   const { data: jurusanList = [] } = useQuery({ queryKey: ["jurusan"], queryFn: listJurusan });
@@ -52,11 +54,44 @@ export default function SiswaForm() {
   });
   const [nilai, setNilai] = useState<Nilai[]>([]);
   const [busy, setBusy] = useState(false);
+  const [loadingData, setLoadingData] = useState(isEdit);
+
+  useEffect(() => {
+    if (isEdit && id) {
+      const loadData = async () => {
+        const data = await getSiswa(id);
+        if (data) {
+          setForm({
+            nisn: data.siswa.nisn,
+            nis: data.siswa.nis || "",
+            nama: data.siswa.nama,
+            tempat_lahir: data.siswa.tempat_lahir || "",
+            tanggal_lahir: data.siswa.tanggal_lahir || "",
+            jenis_kelamin: data.siswa.jenis_kelamin || "Laki-laki",
+            orang_tua: data.siswa.orang_tua || "",
+            alamat: data.siswa.alamat || "",
+            kelas: data.siswa.kelas || "",
+            jurusan: data.siswa.jurusan || "",
+            tahun_ajaran: data.siswa.tahun_ajaran,
+            tanggal_lulus: data.siswa.tanggal_lulus || new Date().toISOString().slice(0, 10),
+            nomor_surat: data.siswa.nomor_surat || "",
+            status: data.siswa.status,
+            keterangan_tunda: data.siswa.keterangan_tunda || "",
+          });
+          setNilai(data.nilai);
+        }
+        setLoadingData(false);
+      };
+      loadData();
+    }
+  }, [id, isEdit]);
 
   // hydrate tahun_ajaran when pengumuman ready
-  if (pengumuman && !form.tahun_ajaran) {
-    setForm((p) => ({ ...p, tahun_ajaran: pengumuman.tahun_ajaran }));
-  }
+  useEffect(() => {
+    if (pengumuman && !form.tahun_ajaran && !isEdit) {
+      setForm((p) => ({ ...p, tahun_ajaran: pengumuman.tahun_ajaran }));
+    }
+  }, [pengumuman, form.tahun_ajaran, isEdit]);
 
   const set = (k: keyof typeof form, v: any) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -70,7 +105,7 @@ export default function SiswaForm() {
     }
     setBusy(true);
     try {
-      const created = await addSiswa({
+      const payload = {
         ...form,
         nis: form.nis || null,
         orang_tua: form.orang_tua || null,
@@ -78,9 +113,17 @@ export default function SiswaForm() {
         jurusan: form.jurusan || null,
         keterangan_tunda: form.status === "Tunda" ? form.keterangan_tunda : null,
         nilai,
-      } as any);
-      toast.success("Data siswa berhasil ditambahkan");
-      nav(`/skl/${created.id}`);
+      } as any;
+
+      if (isEdit && id) {
+        await updateSiswa(id, payload);
+        toast.success("Data siswa berhasil diperbarui");
+        nav("/siswa");
+      } else {
+        const created = await addSiswa(payload);
+        toast.success("Data siswa berhasil ditambahkan");
+        nav(`/skl/${created.id}`);
+      }
     } catch (e: any) {
       toast.error("Gagal menyimpan", { description: e.message });
     } finally { setBusy(false); }
@@ -92,6 +135,16 @@ export default function SiswaForm() {
     { v: "Tunda", cls: "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400" },
   ];
 
+  if (loadingData) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <div className="text-center text-sm text-muted-foreground">Memuat data…</div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <button onClick={() => nav(-1)} className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
@@ -99,7 +152,7 @@ export default function SiswaForm() {
       </button>
       <div className="mb-6">
         <div className="text-xs font-semibold uppercase tracking-widest text-primary">Form Input</div>
-        <h1 className="mt-1 font-display text-3xl font-bold">Tambah Siswa</h1>
+        <h1 className="mt-1 font-display text-3xl font-bold">{isEdit ? "Edit Siswa" : "Tambah Siswa"}</h1>
       </div>
 
       <form onSubmit={submit} className="grid gap-6 lg:grid-cols-3">
@@ -155,8 +208,8 @@ export default function SiswaForm() {
               <Field label="Tahun Pelajaran" required>
                 <input className={inputCls} value={form.tahun_ajaran} onChange={(e) => set("tahun_ajaran", e.target.value)} />
               </Field>
-              <Field label="Nomor Surat" required>
-                <input className={inputCls} value={form.nomor_surat} onChange={(e) => set("nomor_surat", e.target.value)} placeholder="421/SKL/045/2025" />
+              <Field label="No Peserta Ujian" required>
+                <input className={inputCls} value={form.nomor_surat} onChange={(e) => set("nomor_surat", e.target.value)} placeholder="1234567890" />
               </Field>
               <Field label="Tanggal Lulus" required>
                 <input type="date" className={inputCls} value={form.tanggal_lulus} onChange={(e) => set("tanggal_lulus", e.target.value)} />
