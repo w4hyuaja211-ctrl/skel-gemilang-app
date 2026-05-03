@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      setTimeout(() => refreshRole(s?.user?.id), 0);
+      refreshRole(s?.user?.id);
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      setSession(s);
+      setUser(s?.user ?? null);
+      await refreshRole(s?.user?.id);
+    }
     return { error: error?.message ?? null };
   };
   const signOut = async () => {
