@@ -100,7 +100,7 @@ export default function Verifikasi() {
                     ["NISN", siswa.nisn],
                     ["Kelas", siswa.kelas ?? "-"],
                     ["Tahun Pelajaran", siswa.tahun_ajaran],
-                    ["Nomor Surat", siswa.nomor_surat ?? "-"],
+                    ["No Peserta Ujian", siswa.nomor_surat ?? "-"],
                   ].map(([k, v]) => (
                     <div key={k as string} className="flex justify-between border-b border-border/60 pb-2 last:border-0">
                       <span className="text-muted-foreground">{k}</span>
