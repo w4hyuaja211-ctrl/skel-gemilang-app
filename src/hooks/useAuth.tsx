@@ -20,14 +20,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshRole = async (uid: string | undefined) => {
-    if (!uid) return setIsAdmin(false);
-    const { data } = await supabase
+    if (!uid) {
+      console.log("No UID, setting isAdmin false");
+      return setIsAdmin(false);
+    }
+    console.log("Checking user role for UID:", uid);
+    
+    // Try direct query first
+    const { data: rolesData, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", uid)
-      .eq("role", "admin")
-      .maybeSingle();
+      .eq("user_id", uid);
+    
+    console.log("Direct user_roles query result:", { data: rolesData, error: rolesError });
+    
+    if (rolesData && rolesData.length > 0) {
+      const isAdmin = rolesData.some((r) => r.role === "admin");
+      setIsAdmin(isAdmin);
+      console.log("Set isAdmin from direct query to:", isAdmin);
+      return;
+    }
+
+    // If direct query fails, try RPC
+    console.log("Falling back to RPC...");
+    const { data, error } = await supabase.rpc("has_role", {
+      _user_id: uid,
+      _role: "admin"
+    });
+    console.log("has_role RPC result:", { data, error });
     setIsAdmin(!!data);
+    console.log("Set isAdmin from RPC to:", !!data);
   };
 
   useEffect(() => {
