@@ -1,15 +1,20 @@
 import AppShell from "@/components/AppShell";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { listSiswa, deleteSiswa, importSiswa, getPengumuman, type StatusKelulusan } from "@/lib/skl-api";
-import { Plus, Search, Trash2, FileText, Upload, Download } from "lucide-react";
+import { listSiswa, deleteSiswa, importSiswa, getPengumuman, type StatusKelulusan, updateSiswaStatus, listMapel, getNilaiSiswa, type Mapel, type Nilai } from "@/lib/skl-api";
+import { Plus, Search, Trash2, FileText, Upload, Download, Edit2, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const TEMPLATE_HEADERS = [
   "NISN", "NIS", "Nama", "TempatLahir", "TanggalLahir", "JenisKelamin",
-  "OrangTua", "Alamat", "Kelas", "Jurusan", "TahunAjaran", "NomorSurat",
+  "OrangTua", "Alamat", "Kelas", "Jurusan", "TahunAjaran", "NoPesertaUjian",
   "TanggalLulus", "Status", "KeteranganTunda",
 ];
 
@@ -44,8 +49,15 @@ export default function SiswaList() {
   const qc = useQueryClient();
   const { data: siswa = [] } = useQuery({ queryKey: ["siswa-list"], queryFn: listSiswa });
   const { data: pengumuman } = useQuery({ queryKey: ["pengumuman"], queryFn: getPengumuman });
+  const { data: mapelList = [] } = useQuery({ queryKey: ["mapel-list"], queryFn: listMapel });
   const [q, setQ] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedSiswa, setSelectedSiswa] = useState<any>(null);
+  const [selectedStatus, setSelectedStatus] = useState<StatusKelulusan>("Belum");
+  const [selectedMapel, setSelectedMapel] = useState<string[]>([]);
+  const [keteranganTunda, setKeteranganTunda] = useState("");
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
   const filtered = siswa.filter(
     (s) =>
@@ -58,8 +70,8 @@ export default function SiswaList() {
     const ta = pengumuman?.tahun_ajaran ?? "2024/2025";
     const ws = XLSX.utils.aoa_to_sheet([
       TEMPLATE_HEADERS,
-      ["0098765432", "2024.001", "Aulia Rahmadani", "Bandung", "2007-05-14", "Perempuan", "Bapak Hendra", "Jl. Merdeka 21", "XII IPA 1", "MIPA", ta, "421/SKL/045/2025", "2025-05-05", "LULUS", ""],
-      ["0011223344", "2024.002", "Rizky Pratama", "Jakarta", "2007-03-02", "Laki-laki", "Bapak Sudrajat", "Jl. Kenanga 5", "XII IPS 2", "IPS", ta, "421/SKL/046/2025", "2025-05-05", "TUNDA", "Belum menyelesaikan ujian praktik Penjaskes"],
+      ["0098765432", "2024.001", "Aulia Rahmadani", "Bandung", "2007-05-14", "Perempuan", "Bapak Hendra", "Jl. Merdeka 21", "XII IPA 1", "MIPA", ta, "1234567890", "2025-05-05", "LULUS", ""],
+      ["0011223344", "2024.002", "Rizky Pratama", "Jakarta", "2007-03-02", "Laki-laki", "Bapak Sudrajat", "Jl. Kenanga 5", "XII IPS 2", "IPS", ta, "1234567891", "2025-05-05", "TUNDA", "Belum menyelesaikan ujian praktik Penjaskes"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Siswa");
@@ -98,7 +110,7 @@ export default function SiswaList() {
           kelas: String(r.Kelas || "").trim() || null,
           jurusan: String(r.Jurusan || "").trim() || null,
           tahun_ajaran: String(r.TahunAjaran || ta).trim(),
-          nomor_surat: String(r.NomorSurat || "").trim() || null,
+          nomor_surat: String(r.NomorSurat || r.NoPesertaUjian || "").trim() || null,
           tanggal_lulus: parseExcelDate(r.TanggalLulus),
           status: normStatus(r.Status),
           keterangan_tunda: String(r.KeteranganTunda || "").trim() || null,
@@ -127,6 +139,39 @@ export default function SiswaList() {
     await deleteSiswa(id);
     toast.success("Data dihapus");
     qc.invalidateQueries({ queryKey: ["siswa-list"] });
+  };
+
+  const openEditModal = async (siswa: any) => {
+    setSelectedSiswa(siswa);
+    setSelectedStatus(siswa.status);
+    setKeteranganTunda(siswa.keterangan_tunda || "");
+    
+    const existingNilai = await getNilaiSiswa(siswa.id);
+    setSelectedMapel(existingNilai.map((n) => n.mapel));
+    
+    setEditModalOpen(true);
+  };
+
+  const saveStatus = async () => {
+    if (!selectedSiswa) return;
+    setLoadingEdit(true);
+    
+    try {
+      let keterangan = keteranganTunda;
+      if (selectedStatus === "Tunda" && selectedMapel.length > 0) {
+        const mapelNames = selectedMapel.join(", ");
+        keterangan = `Belum menyelesaikan ujian praktik mata pelajaran: ${mapelNames}${keteranganTunda ? ` | ${keteranganTunda}` : ""}`;
+      }
+      
+      await updateSiswaStatus(selectedSiswa.id, selectedStatus, keterangan || null);
+      toast.success("Status kelulusan berhasil diperbarui");
+      qc.invalidateQueries({ queryKey: ["siswa-list"] });
+      setEditModalOpen(false);
+    } catch (err: any) {
+      toast.error("Gagal memperbarui status", { description: err?.message });
+    } finally {
+      setLoadingEdit(false);
+    }
   };
 
   return (
@@ -192,6 +237,12 @@ export default function SiswaList() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">
+                      <Link to={`/siswa/edit/${s.id}`} className="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-500/20">
+                        <Edit2 className="h-3.5 w-3.5" /> Edit
+                      </Link>
+                      <button onClick={() => openEditModal(s)} className="inline-flex items-center gap-1 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-500/20">
+                        <Edit2 className="h-3.5 w-3.5" /> Status
+                      </button>
                       <Link to={`/skl/${s.id}`} className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20">
                         <FileText className="h-3.5 w-3.5" /> Surat
                       </Link>
@@ -213,6 +264,100 @@ export default function SiswaList() {
           </table>
         </div>
       </div>
+
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Status Kelulusan</DialogTitle>
+          </DialogHeader>
+          {selectedSiswa && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 border-b border-border pb-4">
+                <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-primary-foreground">
+                  {selectedSiswa.nama.split(" ").map((w: string) => w[0]).slice(0, 2).join("")}
+                </div>
+                <div>
+                  <div className="font-semibold">{selectedSiswa.nama}</div>
+                  <div className="text-xs text-muted-foreground font-mono">{selectedSiswa.nisn}</div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Status Kelulusan</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus("Lulus")}
+                    className={`flex flex-col items-center gap-1 rounded-xl border p-3 ${selectedStatus === "Lulus" ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-border hover:bg-accent"}`}
+                  >
+                    <CheckCircle2 className={`h-6 w-6 ${selectedStatus === "Lulus" ? "text-green-600" : "text-muted-foreground"}`} />
+                    <span className="text-xs font-semibold">Lulus</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus("Belum")}
+                    className={`flex flex-col items-center gap-1 rounded-xl border p-3 ${selectedStatus === "Belum" ? "border-gray-500 bg-gray-50 dark:bg-gray-950/30" : "border-border hover:bg-accent"}`}
+                  >
+                    <Clock className={`h-6 w-6 ${selectedStatus === "Belum" ? "text-gray-600" : "text-muted-foreground"}`} />
+                    <span className="text-xs font-semibold">Belum</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus("Tunda")}
+                    className={`flex flex-col items-center gap-1 rounded-xl border p-3 ${selectedStatus === "Tunda" ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30" : "border-border hover:bg-accent"}`}
+                  >
+                    <XCircle className={`h-6 w-6 ${selectedStatus === "Tunda" ? "text-amber-600" : "text-muted-foreground"}`} />
+                    <span className="text-xs font-semibold">Tunda</span>
+                  </button>
+                </div>
+              </div>
+
+              {selectedStatus === "Tunda" && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold">Mata Pelajaran (Opsional)</Label>
+                  <div className="grid grid-cols-2 gap-2 border border-border rounded-xl p-3">
+                    {mapelList.map((m) => (
+                      <div key={m.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`mapel-${m.id}`}
+                          checked={selectedMapel.includes(m.nama)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedMapel([...selectedMapel, m.nama]);
+                            } else {
+                              setSelectedMapel(selectedMapel.filter((n) => n !== m.nama));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`mapel-${m.id}`} className="text-xs cursor-pointer">
+                          {m.nama}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Keterangan Tambahan</Label>
+                    <Textarea
+                      value={keteranganTunda}
+                      onChange={(e) => setKeteranganTunda(e.target.value)}
+                      placeholder="Masukkan alasan tunda..."
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setEditModalOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={saveStatus} disabled={loadingEdit}>
+              {loadingEdit ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
