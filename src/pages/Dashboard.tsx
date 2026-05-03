@@ -1,11 +1,13 @@
 import AppShell from "@/components/AppShell";
 import { Link } from "react-router-dom";
-import { useSKL } from "@/store/skl";
+import { useQuery } from "@tanstack/react-query";
+import { listSiswa, getSekolah } from "@/lib/skl-api";
 import { FileText, Plus, Users, CheckCircle2, XCircle, ArrowUpRight, Calendar } from "lucide-react";
 
 export default function Dashboard() {
-  const siswa = useSKL((s) => s.siswa);
-  const sekolah = useSKL((s) => s.sekolah);
+  const { data: siswa = [] } = useQuery({ queryKey: ["siswa-list"], queryFn: listSiswa });
+  const { data: sekolah } = useQuery({ queryKey: ["sekolah"], queryFn: getSekolah });
+
   const lulus = siswa.filter((s) => s.status === "Lulus").length;
   const tunda = siswa.filter((s) => s.status === "Tunda").length;
   const belum = siswa.filter((s) => s.status === "Belum").length;
@@ -23,12 +25,9 @@ export default function Dashboard() {
         <div>
           <div className="text-xs font-semibold uppercase tracking-widest text-primary">Dasbor</div>
           <h1 className="mt-1 font-display text-3xl font-bold md:text-4xl">Selamat datang 👋</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{sekolah.nama}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{sekolah?.nama}</p>
         </div>
-        <Link
-          to="/siswa/baru"
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-md-soft hover:shadow-glow"
-        >
+        <Link to="/siswa/baru" className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-md-soft hover:shadow-glow">
           <Plus className="h-4 w-4" /> Tambah Siswa
         </Link>
       </div>
@@ -48,8 +47,8 @@ export default function Dashboard() {
       <div className="mt-8 rounded-2xl border border-border bg-card shadow-sm-soft">
         <div className="flex items-center justify-between border-b border-border p-5">
           <div>
-            <h2 className="font-display text-lg font-bold">SKL Terbaru</h2>
-            <p className="text-xs text-muted-foreground">Surat keterangan lulus terakhir yang diterbitkan</p>
+            <h2 className="font-display text-lg font-bold">Siswa Terbaru</h2>
+            <p className="text-xs text-muted-foreground">5 entri terakhir yang dibuat</p>
           </div>
           <Link to="/siswa" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
             Lihat semua <ArrowUpRight className="h-3 w-3" />
@@ -65,16 +64,18 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <div className="font-semibold">{s.nama}</div>
-                    <div className="text-xs text-muted-foreground">NISN {s.nisn} · {s.kelas}</div>
+                    <div className="text-xs text-muted-foreground">NISN {s.nisn} · {s.kelas ?? "-"}</div>
                   </div>
                 </div>
                 <div className="text-right">
                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase ${s.status === "Lulus" ? "bg-success/10 text-success" : s.status === "Tunda" ? "bg-amber-500/10 text-amber-700 dark:text-amber-400" : "bg-destructive/10 text-destructive"}`}>
                     {s.status}
                   </span>
-                  <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <Calendar className="h-3 w-3" /> {new Date(s.tanggalLulus).toLocaleDateString("id-ID")}
-                  </div>
+                  {s.tanggal_lulus && (
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Calendar className="h-3 w-3" /> {new Date(s.tanggal_lulus).toLocaleDateString("id-ID")}
+                    </div>
+                  )}
                 </div>
               </Link>
             </li>
