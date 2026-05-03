@@ -142,6 +142,47 @@ export async function deleteSiswa(id: string) {
   const { error } = await supabase.from("siswa").delete().eq("id", id);
   if (error) throw error;
 }
+export async function deleteAllSiswa() {
+  const { error } = await supabase.from("siswa").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) throw error;
+}
+export async function bulkUpdateStatus(status: StatusKelulusan) {
+  const { error } = await supabase
+    .from("siswa")
+    .update({ 
+      status, 
+      tanggal_lulus: status === "Lulus" ? new Date().toISOString().split("T")[0] : null 
+    })
+    .neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) throw error;
+}
+export async function updateSiswa(id: string, input: SiswaInput): Promise<Siswa> {
+  const { nilai = [], ...row } = input;
+  const { data, error } = await supabase.from("siswa").update(row).eq("id", id).select().single();
+  if (error) throw error;
+  await upsertNilaiSiswa(id, nilai);
+  return data as any;
+}
+export async function updateSiswaStatus(id: string, status: StatusKelulusan, keterangan_tunda?: string | null) {
+  const { error } = await supabase
+    .from("siswa")
+    .update({ status, keterangan_tunda, tanggal_lulus: status === "Lulus" ? new Date().toISOString().split("T")[0] : null })
+    .eq("id", id);
+  if (error) throw error;
+}
+export async function getNilaiSiswa(siswaId: string): Promise<Nilai[]> {
+  const { data } = await supabase.from("nilai_siswa").select("*").eq("siswa_id", siswaId);
+  return (data as any) ?? [];
+}
+export async function upsertNilaiSiswa(siswaId: string, nilai: Nilai[]) {
+  await supabase.from("nilai_siswa").delete().eq("siswa_id", siswaId);
+  if (nilai.length > 0) {
+    const { error } = await supabase.from("nilai_siswa").insert(
+      nilai.map((n) => ({ siswa_id: siswaId, mapel: n.mapel, nilai: n.nilai }))
+    );
+    if (error) throw error;
+  }
+}
 export async function importSiswa(rows: Omit<Siswa, "id" | "created_at">[]) {
   // upsert by nisn
   const { error, data } = await supabase
