@@ -310,6 +310,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_siswa_by_nisn: {
+        Args: { _nisn: string }
+        Returns: {
+          id: string
+          jurusan: string
+          kelas: string
+          keterangan_tunda: string
+          nama: string
+          nisn: string
+          nomor_surat: string
+          status: Database["public"]["Enums"]["status_kelulusan"]
+          tahun_ajaran: string
+          tanggal_lulus: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
