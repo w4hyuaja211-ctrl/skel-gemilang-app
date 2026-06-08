@@ -123,9 +123,13 @@ export async function getSiswa(id: string): Promise<{ siswa: Siswa; nilai: Nilai
   const { data: nilai } = await supabase.from("nilai_siswa").select("*").eq("siswa_id", id);
   return { siswa: siswa as any, nilai: (nilai as any) ?? [] };
 }
+// Public-safe lookup via SECURITY DEFINER RPC — returns only fields needed for the
+// public announcement page. Used by visitors who are not signed in.
 export async function findByNISN(nisn: string): Promise<Siswa | null> {
-  const { data } = await supabase.from("siswa").select("*").eq("nisn", nisn).maybeSingle();
-  return (data as any) ?? null;
+  const { data, error } = await (supabase as any).rpc("lookup_siswa_by_nisn", { _nisn: nisn });
+  if (error || !data || (Array.isArray(data) && data.length === 0)) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row as any;
 }
 export async function addSiswa(input: SiswaInput): Promise<Siswa> {
   const { nilai = [], ...row } = input;

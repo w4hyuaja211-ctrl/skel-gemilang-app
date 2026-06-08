@@ -43,7 +43,7 @@ export default function Index() {
     setBusy(true);
     const s = await findByNISN(nisn);
     setBusy(false);
-    if (s) nav(`/verifikasi/${s.id}`);
+    if (s) nav(`/verifikasi?nisn=${encodeURIComponent(nisn)}`);
     else setErr("NISN tidak ditemukan dalam data peserta.");
   };
 

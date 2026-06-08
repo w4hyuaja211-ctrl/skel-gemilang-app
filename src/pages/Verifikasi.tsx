@@ -1,27 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import { useState } from "react";
-import { getPengumuman, getSiswa, findByNISN, type Siswa } from "@/lib/skl-api";
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getPengumuman, findByNISN, type Siswa } from "@/lib/skl-api";
 import {
   CheckCircle2, XCircle, Search, ShieldCheck, GraduationCap, FileText,
   AlertTriangle, Clock, ArrowLeft,
 } from "lucide-react";
 
 export default function Verifikasi() {
-  const { id: paramId } = useParams();
-  const [nisn, setNisn] = useState("");
-  const [submitted, setSubmitted] = useState(!!paramId);
+  const [params] = useSearchParams();
+  const urlNisn = params.get("nisn") ?? "";
+  const [nisn, setNisn] = useState(urlNisn);
+  const [submitted, setSubmitted] = useState(!!urlNisn);
   const [searchResult, setSearchResult] = useState<Siswa | null>(null);
   const [busy, setBusy] = useState(false);
 
   const { data: pengumuman } = useQuery({ queryKey: ["pengumuman"], queryFn: getPengumuman });
-  const { data: byId } = useQuery({
-    queryKey: ["siswa", paramId],
-    queryFn: () => getSiswa(paramId!),
-    enabled: !!paramId,
-  });
 
-  const siswa: Siswa | null = paramId ? byId?.siswa ?? null : searchResult;
+  useEffect(() => {
+    if (urlNisn && /^\d{10}$/.test(urlNisn)) {
+      setBusy(true);
+      findByNISN(urlNisn).then((s) => { setSearchResult(s); setBusy(false); });
+    }
+  }, [urlNisn]);
+
+  const siswa: Siswa | null = searchResult;
 
   const onSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +56,7 @@ export default function Verifikasi() {
           <p className="mt-2 text-sm text-muted-foreground">Tahun Pelajaran {pengumuman?.tahun_ajaran}</p>
         </div>
 
-        {!paramId && (
+        {!urlNisn && (
           <form onSubmit={onSearch} className="mx-auto mt-8 flex max-w-md gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -119,7 +122,7 @@ export default function Verifikasi() {
           </div>
         )}
 
-        {!paramId && !submitted && (
+        {!urlNisn && !submitted && (
           <div className="mt-10 rounded-2xl border border-dashed border-border bg-card/50 p-5 text-center text-xs text-muted-foreground">
             <GraduationCap className="mx-auto mb-2 h-5 w-5 text-primary" />
             Coba dengan NISN demo:{" "}
