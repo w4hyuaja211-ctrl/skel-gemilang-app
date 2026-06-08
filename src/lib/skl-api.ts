@@ -126,7 +126,7 @@ export async function getSiswa(id: string): Promise<{ siswa: Siswa; nilai: Nilai
 // Public-safe lookup via SECURITY DEFINER RPC — returns only fields needed for the
 // public announcement page. Used by visitors who are not signed in.
 export async function findByNISN(nisn: string): Promise<Siswa | null> {
-  const { data, error } = await supabase.rpc("lookup_siswa_by_nisn", { _nisn: nisn });
+  const { data, error } = await (supabase as any).rpc("lookup_siswa_by_nisn", { _nisn: nisn });
   if (error || !data || (Array.isArray(data) && data.length === 0)) return null;
   const row = Array.isArray(data) ? data[0] : data;
   return row as any;
