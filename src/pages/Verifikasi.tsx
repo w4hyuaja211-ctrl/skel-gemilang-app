@@ -56,7 +56,7 @@ export default function Verifikasi() {
           <p className="mt-2 text-sm text-muted-foreground">Tahun Pelajaran {pengumuman?.tahun_ajaran}</p>
         </div>
 
-        {!paramId && (
+        {!urlNisn && (
           <form onSubmit={onSearch} className="mx-auto mt-8 flex max-w-md gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -122,7 +122,7 @@ export default function Verifikasi() {
           </div>
         )}
 
-        {!paramId && !submitted && (
+        {!urlNisn && !submitted && (
           <div className="mt-10 rounded-2xl border border-dashed border-border bg-card/50 p-5 text-center text-xs text-muted-foreground">
             <GraduationCap className="mx-auto mb-2 h-5 w-5 text-primary" />
             Coba dengan NISN demo:{" "}
