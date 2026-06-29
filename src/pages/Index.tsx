@@ -67,11 +67,19 @@ export default function Index() {
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Pengumuman Kelulusan</div>
           </div>
         </div>
-        <Link to="/login" title="Area Admin Sekolah"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/70 px-3 py-2 text-xs font-medium text-muted-foreground backdrop-blur hover:bg-card hover:text-foreground">
-          <Settings className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Login Admin</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/spmb" title="Pengumuman SPMB / PPDB"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10">
+            <FileCheck2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Pengumuman SPMB</span>
+            <span className="sm:hidden">SPMB</span>
+          </Link>
+          <Link to="/login" title="Area Admin Sekolah"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/70 px-3 py-2 text-xs font-medium text-muted-foreground backdrop-blur hover:bg-card hover:text-foreground">
+            <Settings className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Login Admin</span>
+          </Link>
+        </div>
       </header>
 
       <section className="container pb-12 pt-6 md:pt-12">
