@@ -151,6 +151,90 @@ export type Database = {
         }
         Relationships: []
       }
+      ppdb_pendaftar: {
+        Row: {
+          asal_sekolah: string | null
+          catatan: string | null
+          created_at: string
+          id: string
+          nama: string
+          nilai_bahasa_inggris: number
+          nilai_ipa: number
+          nilai_matematika: number
+          no_pendaftaran: string
+          status: Database["public"]["Enums"]["status_ppdb"]
+          updated_at: string
+        }
+        Insert: {
+          asal_sekolah?: string | null
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          nama: string
+          nilai_bahasa_inggris?: number
+          nilai_ipa?: number
+          nilai_matematika?: number
+          no_pendaftaran: string
+          status?: Database["public"]["Enums"]["status_ppdb"]
+          updated_at?: string
+        }
+        Update: {
+          asal_sekolah?: string | null
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          nama?: string
+          nilai_bahasa_inggris?: number
+          nilai_ipa?: number
+          nilai_matematika?: number
+          no_pendaftaran?: string
+          status?: Database["public"]["Enums"]["status_ppdb"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ppdb_pengaturan: {
+        Row: {
+          created_at: string
+          gelombang: string
+          id: string
+          jadwal_buka: string
+          judul: string
+          lokasi_pengambilan: string
+          pesan_lulus: string
+          pesan_tidak_lulus: string
+          tahun_ajaran: string
+          tanggal_pengambilan: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gelombang?: string
+          id?: string
+          jadwal_buka?: string
+          judul?: string
+          lokasi_pengambilan?: string
+          pesan_lulus?: string
+          pesan_tidak_lulus?: string
+          tahun_ajaran?: string
+          tanggal_pengambilan?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gelombang?: string
+          id?: string
+          jadwal_buka?: string
+          judul?: string
+          lokasi_pengambilan?: string
+          pesan_lulus?: string
+          pesan_tidak_lulus?: string
+          tahun_ajaran?: string
+          tanggal_pengambilan?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -303,12 +387,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_ppdb_pengaturan_public: {
+        Args: never
+        Returns: {
+          gelombang: string
+          jadwal_buka: string
+          judul: string
+          lokasi_pengambilan: string
+          pesan_lulus: string
+          pesan_tidak_lulus: string
+          tahun_ajaran: string
+          tanggal_pengambilan: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      lookup_ppdb_by_nomor: {
+        Args: { _no: string }
+        Returns: {
+          asal_sekolah: string
+          catatan: string
+          id: string
+          nama: string
+          nilai_bahasa_inggris: number
+          nilai_ipa: number
+          nilai_matematika: number
+          no_pendaftaran: string
+          status: Database["public"]["Enums"]["status_ppdb"]
+        }[]
       }
       lookup_siswa_by_nisn: {
         Args: { _nisn: string }
@@ -330,6 +441,7 @@ export type Database = {
       app_role: "admin" | "user"
       jenis_kelamin: "Laki-laki" | "Perempuan"
       status_kelulusan: "Lulus" | "Belum" | "Tunda"
+      status_ppdb: "Lulus" | "Tidak Lulus"
       tipe_surat: "SKL" | "SKHU Sementara" | "Surat Keterangan Pengganti Ijazah"
     }
     CompositeTypes: {
@@ -461,6 +573,7 @@ export const Constants = {
       app_role: ["admin", "user"],
       jenis_kelamin: ["Laki-laki", "Perempuan"],
       status_kelulusan: ["Lulus", "Belum", "Tunda"],
+      status_ppdb: ["Lulus", "Tidak Lulus"],
       tipe_surat: [
         "SKL",
         "SKHU Sementara",
