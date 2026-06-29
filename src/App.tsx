@@ -14,6 +14,8 @@ import Verifikasi from "./pages/Verifikasi.tsx";
 import Pengaturan from "./pages/Pengaturan.tsx";
 import Login from "./pages/Login.tsx";
 import MasterData from "./pages/MasterData.tsx";
+import PpdbCheck from "./pages/PpdbCheck.tsx";
+import PpdbAdmin from "./pages/PpdbAdmin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ const App = () => (
             <Route path="/skl/:id" element={<RequireAdmin><SKLDetail /></RequireAdmin>} />
             <Route path="/pengaturan" element={<RequireAdmin><Pengaturan /></RequireAdmin>} />
             <Route path="/master" element={<RequireAdmin><MasterData /></RequireAdmin>} />
+            <Route path="/spmb" element={<PpdbCheck />} />
+            <Route path="/admin/ppdb" element={<RequireAdmin><PpdbAdmin /></RequireAdmin>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

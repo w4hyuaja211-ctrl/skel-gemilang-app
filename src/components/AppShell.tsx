@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, LayoutDashboard, Users, Settings, ShieldCheck, Database, LogOut } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Users, Settings, ShieldCheck, Database, LogOut, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -11,6 +11,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { to: "/dashboard", label: "Dasbor", icon: LayoutDashboard },
     { to: "/siswa", label: "Data Siswa", icon: Users },
     { to: "/master", label: "Master Data", icon: Database },
+    { to: "/admin/ppdb", label: "SPMB / PPDB", icon: Megaphone },
     { to: "/pengaturan", label: "Pengaturan", icon: Settings },
   ];
 
