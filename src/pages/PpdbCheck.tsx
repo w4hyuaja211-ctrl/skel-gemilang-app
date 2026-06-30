@@ -56,6 +56,10 @@ export default function PpdbCheck() {
     else setErr("Nomor pendaftaran tidak ditemukan.");
   };
 
+  const adaNilai = useMemo(() => {
+    if (!hasil) return false;
+    return Number(hasil.nilai_matematika) > 0 || Number(hasil.nilai_ipa) > 0 || Number(hasil.nilai_bahasa_inggris) > 0;
+  }, [hasil]);
   const rata = useMemo(() => {
     if (!hasil) return 0;
     return (Number(hasil.nilai_matematika) + Number(hasil.nilai_ipa) + Number(hasil.nilai_bahasa_inggris)) / 3;
