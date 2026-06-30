@@ -197,13 +197,13 @@ export default function PpdbAdmin() {
               <input className={inputCls} value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} maxLength={120} /></label>
             <label className="block"><span className="mb-1.5 block text-xs font-semibold">Asal Sekolah</span>
               <input className={inputCls} value={form.asal_sekolah} onChange={(e) => setForm({ ...form, asal_sekolah: e.target.value })} maxLength={150} /></label>
-            <label className="block"><span className="mb-1.5 block text-xs font-semibold">Nilai Matematika</span>
+            <label className="block"><span className="mb-1.5 block text-xs font-semibold">Nilai Matematika <span className="text-muted-foreground font-normal">(opsional)</span></span>
               <input type="number" step="0.01" min="0" max="100" className={inputCls}
                 value={form.nilai_matematika} onChange={(e) => setForm({ ...form, nilai_matematika: Number(e.target.value) })} /></label>
-            <label className="block"><span className="mb-1.5 block text-xs font-semibold">Nilai IPA</span>
+            <label className="block"><span className="mb-1.5 block text-xs font-semibold">Nilai IPA <span className="text-muted-foreground font-normal">(opsional)</span></span>
               <input type="number" step="0.01" min="0" max="100" className={inputCls}
                 value={form.nilai_ipa} onChange={(e) => setForm({ ...form, nilai_ipa: Number(e.target.value) })} /></label>
-            <label className="block"><span className="mb-1.5 block text-xs font-semibold">Nilai Bahasa Inggris</span>
+            <label className="block"><span className="mb-1.5 block text-xs font-semibold">Nilai Bahasa Inggris <span className="text-muted-foreground font-normal">(opsional)</span></span>
               <input type="number" step="0.01" min="0" max="100" className={inputCls}
                 value={form.nilai_bahasa_inggris} onChange={(e) => setForm({ ...form, nilai_bahasa_inggris: Number(e.target.value) })} /></label>
             <label className="block"><span className="mb-1.5 block text-xs font-semibold">Status</span>
