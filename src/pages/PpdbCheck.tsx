@@ -178,26 +178,28 @@ export default function PpdbCheck() {
                 )}
               </div>
 
-              <div className="mt-6">
-                <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
-                  <Sparkles className="h-3.5 w-3.5" /> Nilai Tes Kemampuan Akademik (TKA)
+              {adaNilai && (
+                <div className="mt-6">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+                    <Sparkles className="h-3.5 w-3.5" /> Nilai Tes Kemampuan Akademik (TKA)
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[
+                      { l: "Matematika", v: hasil.nilai_matematika },
+                      { l: "IPA", v: hasil.nilai_ipa },
+                      { l: "Bahasa Inggris", v: hasil.nilai_bahasa_inggris },
+                    ].map((m) => (
+                      <div key={m.l} className="rounded-xl border border-border bg-card p-4 text-center">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.l}</div>
+                        <div className="mt-1 font-display text-3xl font-extrabold tabular-nums text-primary">{Number(m.v).toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 text-center text-xs text-muted-foreground">
+                    Rata-rata: <strong className="text-foreground">{rata.toFixed(2)}</strong>
+                  </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[
-                    { l: "Matematika", v: hasil.nilai_matematika },
-                    { l: "IPA", v: hasil.nilai_ipa },
-                    { l: "Bahasa Inggris", v: hasil.nilai_bahasa_inggris },
-                  ].map((m) => (
-                    <div key={m.l} className="rounded-xl border border-border bg-card p-4 text-center">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.l}</div>
-                      <div className="mt-1 font-display text-3xl font-extrabold tabular-nums text-primary">{Number(m.v).toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 text-center text-xs text-muted-foreground">
-                  Rata-rata: <strong className="text-foreground">{rata.toFixed(2)}</strong>
-                </div>
-              </div>
+              )}
 
               <div className={`mt-6 rounded-xl p-4 text-sm leading-relaxed ${lulus ? "bg-green-500/10 text-green-900 dark:text-green-100" : "bg-amber-500/10 text-amber-900 dark:text-amber-100"}`}>
                 <div className="flex items-start gap-2">
